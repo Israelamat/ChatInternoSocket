@@ -1,26 +1,77 @@
 const { Server } = require("net");
 
-const server = new Server();
+const host = "0.0.0.0";
+const END = "END";
+const connections = new Map();
 
-server.on("connection", (socket) => {
-    console.log(`New connection: ${socket.remoteAddress}:${socket.remotePort}`);
+const error = (message) => {
+  console.error(message);
+  process.exit(1);
+};
 
-    socket.setEncoding("utf-8");
+const sendMessage = (message, origin) => {
+  for (const [socket, username] of connections) {
+    if (socket !== origin) {
+      socket.write(message);
+    }
+  }
+};
 
-    socket.on("data", (data) => {
-        console.log(`Received data from ${socket.remoteAddress}: ${data}`);
-        socket.write(data); 
-    });
+const handleConnection = (socket) => {
+  const remoteSocket = `${socket.remoteAddress}:${socket.remotePort}`;
+  console.log(`New connection from ${remoteSocket}`);
+  socket.setEncoding("utf-8");
 
-    socket.on("close", () => {
-        console.log(`Connection closed: ${socket.remoteAddress}:${socket.remotePort}`);
-    });
+  socket.on("data", (message) => {
+    if (!connections.has(socket)) {
+      console.log(`Username ${message} set for connection ${remoteSocket}`);
+      connections.set(socket, message);
+    } else if (message.trim() === END) {
+      connections.delete(socket);
+      socket.end();
+    } else {
+      const fullMessage = `[${connections.get(socket)}]: ${message}`;
+      console.log(`${remoteSocket} -> ${fullMessage}`);
+      sendMessage(fullMessage, socket);
+    }
+  });
 
-    socket.on("error", (err) => {
-        console.error(`Socket error: ${err.message}`);
-    });
-});
+  socket.on("error", (err) => console.error(err));
 
-server.listen({ port: 8000, host: "::1" }, () => {
-    console.log("Server listening on port 8000");
-});
+  socket.on("close", () => {
+    console.log(`Connection with ${remoteSocket} closed`);
+    const username = connections.get(socket);
+    connections.delete(socket);
+    sendMessage(`User ${username} has left the chat`, socket);
+  });
+};
+
+const startServer = (port) => {
+  const server = new Server();
+
+  server.on("connection", handleConnection);
+
+  server.listen({ port, host }, () => {
+    console.log(`Listening on port ${port}`);
+  });
+
+  server.on("error", (err) => error(err.message));
+};
+
+const main = () => {
+  if (process.argv.length !== 3) {
+    error(`Usage: node ${__filename} port`);
+  }
+
+  let port = process.argv[2];
+  if (isNaN(port)) {
+    error(`Invalid port ${port}`);
+  }
+
+  port = Number(port);
+  startServer(port);
+};
+
+if (require.main === module) {
+  main();
+}
