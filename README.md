@@ -33,5 +33,5 @@ Contiene el código del servidor que acepta conexiones de clientes, gestiona los
 
 Siéntete libre de contribuir con mejoras o nuevas funcionalidades para esta aplicación. Abriremos un espacio para colaboradores y nuevas propuestas.
 
-**Nota:** Asegúrate de proporcionar instrucciones claras sobre cómo ejecutar tanto el cliente como el servidor.
-
+## Capturas de Pantalla (Falta seguir desarrollando)
+[![Chat-Socket.jpg](https://i.postimg.cc/GhMgCbcZ/Chat-Socket.jpg)](https://postimg.cc/6yvfVJ40)
